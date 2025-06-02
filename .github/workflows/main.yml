@@ -1,0 +1,67 @@
+name: JMeter Test using PerfAction
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  run-jmeter:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Apache JMeter
+        run: |
+          wget https://downloads.apache.org/jmeter/binaries/apache-jmeter-5.6.3.tgz
+          tar -xvzf apache-jmeter-5.6.3.tgz
+          echo "JMETER_HOME=$PWD/apache-jmeter-5.6.3" >> $GITHUB_ENV
+          echo "$PWD/apache-jmeter-5.6.3/bin" >> $GITHUB_PATH
+
+      - name: Create custom JMeter properties file
+        run: |
+          echo "jmeter.reportgenerator.exporter.html.property.graph.responseTimeDistribution.intervals=0,100,500,1000,2000" > custom.properties
+          echo "jmeter.reportgenerator.exporter.html.series_filter=.*" >> custom.properties
+          echo "jmeter.reportgenerator.exporter.html.filters_only_sample_series=false" >> custom.properties
+          echo "jmeter.reportgenerator.overall_granularity=60000" >> custom.properties
+
+      - name: Run JMeter test with PerfAction
+        uses: QAInsights/PerfAction@v5.6.3
+        with:
+          test-plan-path: './test-lacueillette.jmx'     # <-- ✅ nouveau chemin ici
+          results-file: './cueillette.jtl'
+
+      - name: List files after JMeter test
+        run: ls -la
+
+      - name: Generate HTML Report from JTL with custom properties
+        run: |
+          mkdir -p jmeter-report
+          jmeter -g cueillette.jtl -o jmeter-report -q custom.properties
+
+      - name: Generate test summary
+        run: |
+          echo "## Résumé JMeter" > summary.md
+          echo "Date du test : $(date)" >> summary.md
+          echo "\nNombre total de lignes dans le fichier JTL :" >> summary.md
+          wc -l < cueillette.jtl >> summary.md
+
+      - name: Upload JTL result file
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-result-jtl
+          path: cueillette.jtl
+
+      - name: Upload HTML Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-html-report
+          path: jmeter-report/
+
+      - name: Upload Test Summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-summary
+          path: summary.md
