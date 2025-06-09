@@ -31,7 +31,7 @@ jobs:
         uses: QAInsights/PerfAction@v5.6.3
         with:
           test-plan-path: './test-lacueillette.jmx'     # <-- ✅ nouveau chemin ici
-          results-file: './cueillette.jtl'
+          results-file: './cueillette1000final.jtl'
 
       - name: List files after JMeter test
         run: ls -la
@@ -39,20 +39,20 @@ jobs:
       - name: Generate HTML Report from JTL with custom properties
         run: |
           mkdir -p jmeter-report
-          jmeter -g cueillette.jtl -o jmeter-report -q custom.properties
+          jmeter -g cueillette1000final.jtl -o jmeter-report -q custom.properties
 
       - name: Generate test summary
         run: |
           echo "## Résumé JMeter" > summary.md
           echo "Date du test : $(date)" >> summary.md
           echo "\nNombre total de lignes dans le fichier JTL :" >> summary.md
-          wc -l < cueillette.jtl >> summary.md
+          wc -l < cueillette1000final.jtl >> summary.md
 
       - name: Upload JTL result file
         uses: actions/upload-artifact@v4
         with:
           name: jmeter-result-jtl
-          path: cueillette.jtl
+          path: cueillette1000final.jtl
 
       - name: Upload HTML Report
         uses: actions/upload-artifact@v4
